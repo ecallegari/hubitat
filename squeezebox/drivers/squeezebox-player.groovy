@@ -26,6 +26,7 @@
  * 17/10/2018 - Add method to speak the names of an artist's albums
  * 18/10/2018 - Adjust spoken error messages to be more useful and less specific to voice control
  * 18/10/2018 - Replace '&' in TTS input with ' and '
+ * 08/05/2019 - Added custom command to setVoice (voice/language) and added preferences to set default choice - ecallegari
  */
 metadata {
   definition (name: "Squeezebox Player", namespace: "xap", author: "Ben Deitch") {
@@ -66,7 +67,21 @@ metadata {
     command "transferPlaylist", ["STRING"]
     command "unsync"
     command "unsyncAll"
+	command "setVoice", ["STRING"]    //ecallegari - added custom setVoice command
   }
+	
+    preferences {	//ecallegari - added default voice/language preferences choice for each player (will override HE's global default)
+					//ecallegari - below is current Voice list from Amazon 5/2019.  To do, make it more Menu friendly (separate Gender/Language)
+		input name: "voice_Choice", type: "enum", title: "Default Voice And Language", options: ["Zeina(arb)","Zhiyu(cmn-CN)","Naja(da-DK)","Mads(da-DK)",
+				"Lotte(nl-NL)","Ruben(nl-NL)","Nicole(en-AU)","Russell(en-AU)","Amy(en-gb)","Brian(en-gb)","Emma(en-gb)","Raveena(en-IN)",
+				"Ivy(en-us)","Joanna(en-us)","Joey(en-us)","Justin(en-us)","Kendra(en-us)","Kimberly(en-us)","Matthew(en-us)","Salli(en-us)",
+                "Geraint(en-GB-WLS)","Mathieu(fr-FR)","Celine(fr-FR)","Léa(fr-FR)","Chantal (fr-CA)","Hans(de-DE)","Marlene(de-DE)","Vicki(de-DE)",
+				"Aditi(en-IN hi-IN)","Karl(is-IS)","Dora(is-IS)","Giorgio(it-IT)","Carla(it-IT)","Bianca(it-IT)",
+				"Takumi(ja-JP)","Mizuki(ja-JP)","Seoyeon(ko-KR)","Liv(nb-NO)","Jacek(pl-PL)","Jan(pl-PL)","Ewa(pl-PL)","Maja(pl-PL)",
+                "Ricardo (pt-BR)","Vitoria (pt-BR)","Cristiano(pt-PT)","Ines(pt-PT)","Carmen(ro-RO)","Maxim(ru-RU)","Tatyana(ru-RU)",
+                "Enrique(es-ES)","Conchita(es-ES)","Lucia(es-ES)","Mia(es-MX)","Penelope(es-US)","Miguel(es-US)","Astrid(sv-SE)","Filiz(tr-TR)","Gwyneth(cy-GB)"], 
+			description: "Select voice to use for speech. Overrides Hubitat's global default voice"
+	}	
 }
 
 // define constants for repeat mode (order must match LMS modes)
@@ -437,11 +452,23 @@ def fav6() { playFavorite(6) }
 
 //--- Speech
 private getTts(text) {
-  if (text) {
+	if(voice_Choice) {
+		def splitVoice = voice_Choice.split("\\(")
+   		voice_Choice = splitVoice[0]	
+	}
+
+	def myVoice = state.customVoice ?: voice_Choice ?: "Salli(en-us)"   //ecallegari - get voice, if failed then use Salli
+	if (text) {
     text = text.replace("&", "and")
     // add a break to the end of the generated file, prevents text being repeated if LMS decides to loop?!?
-    def result = textToSpeech("${text}<break time='2s'/>")
-    // reduce the duration to account for the added break
+		log "textToSpeech"
+
+	def result = textToSpeech("${text}<break time='2s'/>", myVoice)    //ecallegari - add voice to params
+    		 log.debug (myVoice+" speaks: "+text)
+		log.debug ("customVoice = "+state.customVoice)
+		log.debug("voice_Choice = "+voice_Choice)
+
+		// reduce the duration to account for the added break
     if (result) {
       result.duration -= 2
       result
@@ -480,6 +507,27 @@ def playTextAndResume(text, volume=null) {
 def speak(text) {
   log "speak(\"${text}\")"
   playText(text)
+}
+
+def setVoice(sentvoice) { 				//ecallegari - added command to receive Voice externally such as rules machine custom command
+	state.customVoice = sentvoice
+	if(sentvoice && ["Zeina(arb)","Zhiyu(cmn-CN)","Naja(da-DK)","Mads(da-DK)",
+				"Lotte(nl-NL)","Ruben(nl-NL)","Nicole(en-AU)","Russell(en-AU)","Amy(en-gb)","Brian(en-gb)","Emma(en-gb)","Raveena(en-IN)",
+				"Ivy(en-us)","Joanna(en-us)","Joey(en-us)","Justin(en-us)","Kendra(en-us)","Kimberly(en-us)","Matthew(en-us)","Salli(en-us)",
+                "Geraint(en-GB-WLS)","Mathieu(fr-FR)","Celine(fr-FR)","Léa(fr-FR)","Chantal (fr-CA)","Hans(de-DE)","Marlene(de-DE)","Vicki(de-DE)",
+				"Aditi(en-IN hi-IN)","Karl(is-IS)","Dora(is-IS)","Giorgio(it-IT)","Carla(it-IT)","Bianca(it-IT)",
+				"Takumi(ja-JP)","Mizuki(ja-JP)","Seoyeon(ko-KR)","Liv(nb-NO)","Jacek(pl-PL)","Jan(pl-PL)","Ewa(pl-PL)","Maja(pl-PL)",
+                "Ricardo (pt-BR)","Vitoria (pt-BR)","Cristiano(pt-PT)","Ines(pt-PT)","Carmen(ro-RO)","Maxim(ru-RU)","Tatyana(ru-RU)",
+                "Enrique(es-ES)","Conchita(es-ES)","Lucia(es-ES)","Mia(es-MX)","Penelope(es-US)","Miguel(es-US)","Astrid(sv-SE)",
+				"Filiz(tr-TR)","Gwyneth(cy-GB)"].contains(sentvoice)){
+		    def splitVoice = sentvoice.split("\\(")
+       		state.customVoice = splitVoice[0]	
+			log.debug ("Voice now set to " + state.customVoice)
+        }
+	else {
+			log.debug ("Invalid Voice for setVoice command, defaulting back to preferences") 
+			state.customVoice = NULL
+	}
 }
 
 //--- Synchronization
