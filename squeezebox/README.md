@@ -1,5 +1,7 @@
 Squeezebox Integration for Hubitat
 
+*Ecallegari fork change:. added setVoice command and added voice/language preference selection for the device*
+
 Installation
 ============
 
