@@ -27,6 +27,7 @@
  * 18/10/2018 - Adjust spoken error messages to be more useful and less specific to voice control
  * 18/10/2018 - Replace '&' in TTS input with ' and '
  * 08/05/2019 - Added custom command to setVoice (voice/language) and added preferences to set default choice - ecallegari
+ * 03/06/2019 - Change type of playFavorite argument NUMBER -> INTEGER
  */
 metadata {
   definition (name: "Squeezebox Player", namespace: "xap", author: "Ben Deitch") {
@@ -52,7 +53,7 @@ metadata {
     command "fav6"
     command "playAlbum", ["STRING"]
     command "playArtist", ["STRING"]
-    command "playFavorite", ["NUMBER"]
+    command "playFavorite", ["INTEGER"]
     command "playSong", ["STRING"]
     command "playTextAndRestore", ["STRING","NUMBER"]
     command "playTextAndResume", ["STRING","NUMBER"]
